@@ -6,8 +6,9 @@
 #include "tables.h"
 #include "structs.h"
 
-midi MIDI(D1,D0,31250);
-ymf825 YMF825(D11,D12,D13,D10,D8);
+midi MIDI(PG_14,PG_9,31250);
+ymf825 YMF825(PC_12,PC_11,PC_10,PC_9,PC_8);
+Serial debugPort(USBTX,USBRX,460800);
 
 struct fmStatus _fmStatus[16];
 struct midiStatus _midiStatus[16];
@@ -17,18 +18,179 @@ uint8_t rpnMsb = 0x7f;
 uint8_t rpnLsb = 0x7f;
 uint8_t mode = 0;
 uint8_t pitchBendSensitivity = 2;
-DigitalOut LEDs[] = {A0,A1,A2,A3};
-InterruptIn buttons[] = {D4,D5,D6,D7};
 
-void outputLED(uint8_t data){
-    LEDs[0] = (data & 0b0001)? 1 : 0;
-    LEDs[1] = (data & 0b0010)? 1 : 0;
-    LEDs[2] = (data & 0b0100)? 1 : 0;
-    LEDs[3] = (data & 0b1000)? 1 : 0;
+void showInterFace(void){
+    debugPort.puts("\e[1;1H\e[1;1f");
+    debugPort.puts("\e[2J");
+    debugPort.puts("Sakura767 Status Viewer Ver 1.0.0\n");
+    debugPort.puts("Status:Active\n");
+    debugPort.puts("vono|00|01|02|03|04|05|06|07|08|09|0A|0B|0C|0D|0E|0F|\n");
+    debugPort.puts("chno|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|\n");
+    debugPort.puts("part|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|\n");
+    debugPort.puts("expr|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|\n");
+    debugPort.puts("hold|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|\n");
+    debugPort.puts("tone|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|\n");
+    debugPort.puts("pitb|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|\n");
+    debugPort.puts("Voices:--\n");
+    debugPort.puts("Flags:--\n");
+    debugPort.puts("\n");
+}
+
+void showExpression(uint8_t ch,bool status);
+void showPartLevel(uint8_t ch,bool status);
+void showTone(uint8_t ch,bool status);
+void showHold(uint8_t ch,bool status);
+void showPitchBend(uint8_t ch,bool status);
+void showVoiceCount(void);
+
+void showChannelNumber(uint8_t ch,bool status){
+    char buffer[20] = "";
+    sprintf(buffer,"\e[4;%dH\e[4;%df|",(5 +(3 * ch)),(5 +(3 * ch)));
+    debugPort.puts(buffer);
+    if(status == true){
+        sprintf(buffer,"%02x|",_fmStatus[ch].midiChannel);
+        debugPort.puts(buffer);
+        showExpression(ch,true);
+        showPartLevel(ch,true);
+        showTone(ch,true);
+        showHold(ch,true);
+        showPitchBend(ch,true);
+    } else {
+        debugPort.puts("--|");
+        showExpression(ch,false);
+        showPartLevel(ch,false);
+        showTone(ch,false);
+        showHold(ch,false);
+        showPitchBend(ch,false);
+    }
+    showVoiceCount();
+    return;
+}
+
+void showPartLevel(uint8_t ch,bool status){
+    char buffer[20] = "";
+    uint8_t pl = _midiStatus[_fmStatus[ch].midiChannel].partLevel;
+    sprintf(buffer,"\e[5;%dH\e[5;%df|",(5 +(3 * ch)),(5 +(3 * ch)));
+    debugPort.puts(buffer);
+    if(status == true){
+        sprintf(buffer,"%02x\e[0m|",pl);
+        if(pl < 40){
+            debugPort.puts("\e[31m");
+        } else if(pl < 80){
+            debugPort.puts("\e[33m");
+        } else {
+            debugPort.puts("\e[32m");
+        }
+        debugPort.puts(buffer);
+    } else {
+        debugPort.puts("--|");
+    }
+}
+
+void showExpression(uint8_t ch,bool status){
+    char buffer[20] = "";
+    uint8_t exp = _midiStatus[_fmStatus[ch].midiChannel].expression;
+    sprintf(buffer,"\e[6;%dH\e[6;%df|",(5 +(3 * ch)),(5 +(3 * ch)));
+    debugPort.puts(buffer);
+    if(status == true){
+        sprintf(buffer,"%02x\e[0m|",exp);
+        if(exp < 40){
+            debugPort.puts("\e[31m");
+        } else if(exp < 80){
+            debugPort.puts("\e[33m");
+        } else {
+            debugPort.puts("\e[32m");
+        }
+        debugPort.puts(buffer);
+    } else {
+        debugPort.puts("--|");
+    }
+}
+
+void showHold(uint8_t ch,bool status){
+    char buffer[20] = "";
+    sprintf(buffer,"\e[7;%dH\e[7;%df|",(5 +(3 * ch)),(5 +(3 * ch)));
+    debugPort.puts(buffer);
+    if(status == true){
+        if(_midiStatus[_fmStatus[ch].midiChannel].hold){
+            debugPort.puts("\e[34mOO\e[0m|");
+        } else {
+            debugPort.puts("\e[35mXX\e[0m|");
+        }
+    } else {
+        debugPort.puts("--|");
+    }
+}
+
+void showTone(uint8_t ch,bool status){
+    char buffer[20] = "";
+    sprintf(buffer,"\e[8;%dH\e[8;%df|",(5 +(3 * ch)),(5 +(3 * ch)));
+    debugPort.puts(buffer);
+    if(status == true){
+        sprintf(buffer,"%02x",_midiStatus[_fmStatus[ch].midiChannel].programNumber);
+        debugPort.puts(buffer);
+    } else {
+        debugPort.puts("--|");
+    }
+}
+
+void showPitchBend(uint8_t ch,bool status){
+    char buffer[20] = "";
+    sprintf(buffer,"\e[9;%dH\e[9;%df|",(5 +(3 * ch)),(5 +(3 * ch)));
+    debugPort.puts(buffer);
+    if(status == true){
+        sprintf(buffer,"%02x\e[0m|",_midiStatus[_fmStatus[ch].midiChannel].pitchBend >> 6);
+        if(_midiStatus[_fmStatus[ch].midiChannel].pitchBend > 128){
+            debugPort.puts("\e[32m");
+        } else if(_midiStatus[_fmStatus[ch].midiChannel].pitchBend < 128){
+            debugPort.puts("\e[36m");
+        }
+        debugPort.puts(buffer);
+    } else {
+        debugPort.puts("--|");
+    }
+}
+
+void showVoiceCount(void){
+    uint8_t cnt = 0;
+    char text[20] = "";
+    for(int i = 0;i < 16;i++){
+        if(_fmStatus[i].isUsed)cnt++;
+    }
+    debugPort.puts("\e[10;8H\e[10;8f");
+    sprintf(text,"%02x",cnt);
+    debugPort.puts(text);
+    return;
+}
+
+void showStatus(uint8_t status){
+    debugPort.puts("\e[2;8H\e[2;8f");
+    switch(status){
+        case 0:
+            debugPort.puts("\e[31mInitialising  \e[0m");
+            break;
+        case 1:
+            debugPort.puts("\e[32mNormal(Active)\e[0m");
+            break;
+        case 2:
+            debugPort.puts("\e[33mDebug Mode    \e[0m");
+            break;
+    }
+}
+
+bool ofRecent = false;
+void showOverFlag(bool status){
+    if(ofRecent == status)return;
+    debugPort.puts("\e[11;7H\e[11;7f");
+    if(status){
+        debugPort.puts("OVR");
+    } else {
+        debugPort.puts("---");
+    }
+    ofRecent = status;
 }
 
 void noteOn(uint8_t channel,uint8_t note,uint8_t velocity){
-    if(mode == 0)outputLED(channel);
     prevMax = 0;
     if(channel == 9)return;
     for(int i = 0;i < 16;i++){
@@ -37,17 +199,19 @@ void noteOn(uint8_t channel,uint8_t note,uint8_t velocity){
             if(_fmStatus[i].priority > 511)_fmStatus[i].priority=511;
         }
         if(_fmStatus[i].isUsed == false){
-            if(mode == 1)outputLED(i);
             _fmStatus[i].isUsed = true;
             _fmStatus[i].noteNumber = note;
             _fmStatus[i].midiChannel = channel;
-            YMF825.setChannelVolume(i,expTable[(_midiStatus[channel].partLevel >> 2)][(_midiStatus[channel].expression >> 2)]);
+            YMF825.setChannelVolume(i,expTable[(_midiStatus[channel].partLevel)][(_midiStatus[channel].expression)]);
             YMF825.setModulation(i,_midiStatus[channel].modulation);
             YMF825.pitchWheelChange(i,_midiStatus[channel].pitchBend,pitchBendSensitivity);
             YMF825.noteOn(i,note,velocity >> 1,channel);
+            showChannelNumber(i,true);
+            showOverFlag(false);
             return;
         }
     }
+    showOverFlag(true);
     for(int i = 0;i < 16;i++){
         if(prevMax <= _fmStatus[i].priority + (_fmStatus[i].midiChannel << 1)&& _fmStatus[i].isUsed != false){
             prevMax = _fmStatus[i].priority + (_fmStatus[i].midiChannel << 1);
@@ -57,9 +221,7 @@ void noteOn(uint8_t channel,uint8_t note,uint8_t velocity){
     _midiStatus[offChannel].hold = false;
     _fmStatus[offChannel].priority = 0;
     YMF825.noteOff(offChannel);
-
-    _fmStatus[offChannel].isUsed = false;
-    noteOn(channel,note,velocity);
+    YMF825.noteOn(offChannel,note,velocity >> 1,channel);
     return;
 }
 
@@ -71,6 +233,7 @@ void noteOff(uint8_t channel,uint8_t note,uint8_t velocity){
                 _fmStatus[i].isUsed = false;
                 YMF825.noteOff(i);
                 _fmStatus[i].priority = 0;
+                showChannelNumber(i,false);
                 return;
             }
 
@@ -82,6 +245,7 @@ void pitchBend(uint8_t channel,uint16_t pitchBend){
     _midiStatus[channel].pitchBend = pitchBend;
     for(int i = 0;i < 16;i++){
         if(_fmStatus[i].isUsed == true && _fmStatus[i].midiChannel == channel){
+            showPitchBend(i,true);
             YMF825.pitchWheelChange(i,pitchBend,pitchBendSensitivity);
         }
     }
@@ -120,7 +284,8 @@ void controlChange(uint8_t channel,uint8_t number,uint8_t value){
             _midiStatus[channel].partLevel = value;
             for(int i = 0;i < 16;i++){
                 if(_fmStatus[i].isUsed == true && _fmStatus[i].midiChannel == channel){
-                    YMF825.setChannelVolume(i,expTable[(_midiStatus[channel].partLevel >> 2)][(_midiStatus[channel].expression >> 2)]);
+                    YMF825.setChannelVolume(i,expTable[(_midiStatus[channel].partLevel)][(_midiStatus[channel].expression)]);
+                    showPartLevel(i,true);
                 }
             }
             break;
@@ -129,13 +294,19 @@ void controlChange(uint8_t channel,uint8_t number,uint8_t value){
             _midiStatus[channel].expression = value;
             for(int i = 0;i < 16;i++){
                 if(_fmStatus[i].isUsed == true && _fmStatus[i].midiChannel == channel){
-                    YMF825.setChannelVolume(i,expTable[(_midiStatus[channel].partLevel >> 2)][(_midiStatus[channel].expression >> 2)]);
+                    YMF825.setChannelVolume(i,expTable[(_midiStatus[channel].partLevel)][(_midiStatus[channel].expression)]);
+                    showExpression(i,true);
                 }
             }
             break;
         case 64:
             if(value > 63){
                 status &= ~(0b1000);
+                for(int i = 0;i < 16;i++){
+                    if(_fmStatus[i].isUsed == true && _fmStatus[i].midiChannel == channel){
+                        showHold(i,true);
+                    }
+                }
                 _midiStatus[channel].hold = true;
             } else {
                 status |= 0b1000;
@@ -145,6 +316,7 @@ void controlChange(uint8_t channel,uint8_t number,uint8_t value){
                         YMF825.noteOff(i);
                         _fmStatus[i].priority = 0;
                         _fmStatus[i].isUsed = false;
+                        showHold(i,false);
                     }
                 }
             }
@@ -158,10 +330,10 @@ void controlChange(uint8_t channel,uint8_t number,uint8_t value){
             rpnMsb = value;
             break;
     }
-    if(mode == 2)outputLED(status);
 }
 
 void programChange(uint8_t channel,uint8_t number){
+    _midiStatus[channel].programNumber = number;
     if(_midiStatus[channel].bankMsb == 64){
         YMF825.setToneListFromGM(channel,number + 128);
     } else {
@@ -222,26 +394,9 @@ void sysEx(uint8_t *data,uint8_t length){
     YMF825.setOriginalTone(data[4],tmp);
 }
 
-void int1(void){
-    mode = 0;
-}
-
-void int2(void){
-    mode = 1;
-}
-
-void int3(void){
-    mode = 2;
-}
-
-void int4(void){
-
-}
-
 int main(void){
-    for(int i = 0;i < 4;i++){
-        buttons[i].mode(PullUp);
-    }
+    showInterFace();
+    showStatus(0);
     MIDI.setCallbacKReceiveControlChange(controlChange);
     MIDI.setCallbackReceiveNoteOn(noteOn);
     MIDI.setCallbackReceiveNoteOff(noteOff);
@@ -252,11 +407,8 @@ int main(void){
     MIDI.setCallbackReceiveAllSoundsOff(soundsOff);
     MIDI.setCallbackReceiveSystemExclusive(sysEx);
     reset();
-
-    buttons[0].fall(int1);
-    buttons[1].fall(int2);
-    buttons[2].fall(int3);
-    buttons[3].fall(int4);
+    wait(1.0);
+    showStatus(2);
     while(1){
         MIDI.midiParse();
     }

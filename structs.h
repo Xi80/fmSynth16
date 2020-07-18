@@ -9,7 +9,6 @@ struct channel {
 
 struct fmStatus {
     bool isUsed = false;
-    bool release = false;
     uint8_t noteNumber = 0;
     uint8_t midiChannel = 0;
     uint16_t priority = 0;
@@ -22,6 +21,7 @@ struct midiStatus {
     uint8_t modulation = 0;
     uint16_t pitchBend = 8192;
     bool hold = false;
+    uint8_t programNumber = 0;
 };
 
 namespace midiMessages {
