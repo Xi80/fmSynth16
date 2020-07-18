@@ -8,10 +8,11 @@
 
 midi MIDI(PG_14,PG_9,31250);
 ymf825 YMF825(PC_12,PC_11,PC_10,PC_9,PC_8);
-Serial debugPort(USBTX,USBRX,460800);
+Serial debugPort(USBTX,USBRX,921600);
 
 struct fmStatus _fmStatus[16];
 struct midiStatus _midiStatus[16];
+uint8_t prevCh = 0;
 uint8_t prevMax     = 0;
 uint8_t offChannel  = 0;
 uint8_t rpnMsb = 0x7f;
@@ -140,9 +141,9 @@ void showPitchBend(uint8_t ch,bool status){
     debugPort.puts(buffer);
     if(status == true){
         sprintf(buffer,"%02x\e[0m|",_midiStatus[_fmStatus[ch].midiChannel].pitchBend >> 6);
-        if(_midiStatus[_fmStatus[ch].midiChannel].pitchBend > 128){
+        if((_midiStatus[_fmStatus[ch].midiChannel].pitchBend >> 6)> 128){
             debugPort.puts("\e[32m");
-        } else if(_midiStatus[_fmStatus[ch].midiChannel].pitchBend < 128){
+        } else if((_midiStatus[_fmStatus[ch].midiChannel].pitchBend >> 6)< 128){
             debugPort.puts("\e[36m");
         }
         debugPort.puts(buffer);
@@ -158,7 +159,7 @@ void showVoiceCount(void){
         if(_fmStatus[i].isUsed)cnt++;
     }
     debugPort.puts("\e[10;8H\e[10;8f");
-    sprintf(text,"%02x",cnt);
+    sprintf(text,"%02d",cnt);
     debugPort.puts(text);
     return;
 }
@@ -191,9 +192,12 @@ void showOverFlag(bool status){
 }
 
 void noteOn(uint8_t channel,uint8_t note,uint8_t velocity){
+    if(prevCh > 15){
+        prevCh = 0;
+    }
     prevMax = 0;
     if(channel == 9)return;
-    for(int i = 0;i < 16;i++){
+    for(int i = prevCh;i < 16;i++){
         if(_fmStatus[i].priority != 0){
             _fmStatus[i].priority++;
             if(_fmStatus[i].priority > 511)_fmStatus[i].priority=511;
@@ -208,6 +212,26 @@ void noteOn(uint8_t channel,uint8_t note,uint8_t velocity){
             YMF825.noteOn(i,note,velocity >> 1,channel);
             showChannelNumber(i,true);
             showOverFlag(false);
+            prevCh++;
+            return;
+        }
+    }
+    for(int i = 0;i < prevCh;i++){
+        if(_fmStatus[i].priority != 0){
+            _fmStatus[i].priority++;
+            if(_fmStatus[i].priority > 511)_fmStatus[i].priority=511;
+        }
+        if(_fmStatus[i].isUsed == false){
+            _fmStatus[i].isUsed = true;
+            _fmStatus[i].noteNumber = note;
+            _fmStatus[i].midiChannel = channel;
+            YMF825.setChannelVolume(i,expTable[(_midiStatus[channel].partLevel)][(_midiStatus[channel].expression)]);
+            YMF825.setModulation(i,_midiStatus[channel].modulation);
+            YMF825.pitchWheelChange(i,_midiStatus[channel].pitchBend,pitchBendSensitivity);
+            YMF825.noteOn(i,note,velocity >> 1,channel);
+            showChannelNumber(i,true);
+            showOverFlag(false);
+            prevCh++;
             return;
         }
     }
@@ -316,7 +340,7 @@ void controlChange(uint8_t channel,uint8_t number,uint8_t value){
                         YMF825.noteOff(i);
                         _fmStatus[i].priority = 0;
                         _fmStatus[i].isUsed = false;
-                        showHold(i,false);
+                        showChannelNumber(i,false);
                     }
                 }
             }
@@ -395,6 +419,7 @@ void sysEx(uint8_t *data,uint8_t length){
 }
 
 int main(void){
+    wait_us(500);
     showInterFace();
     showStatus(0);
     MIDI.setCallbacKReceiveControlChange(controlChange);
