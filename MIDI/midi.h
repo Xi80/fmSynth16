@@ -37,6 +37,8 @@ public:
 
     void midiParse(void);
 
+    void rxIrq(bool);
+
 private:
     Serial _serial;
     lunaLib::CircularBuffer <uint8_t, receiveMessageBufferSize> messageBuffer;

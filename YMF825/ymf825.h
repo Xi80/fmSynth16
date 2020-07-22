@@ -33,14 +33,10 @@ public:
 
     void allMute(void);
 
-    void setOriginalTone(uint8_t, uint8_t *);
-
 private:
-    uint8_t originalTones[24][30];
     uint8_t sendData[485];
     SPI _spi;
     DigitalOut _slaveSelect, _reset;
-    struct channel channels[16];
-
+    uint8_t toneNumbers[16];
     void singleWrite(uint8_t, uint8_t);
 };

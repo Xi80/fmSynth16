@@ -17,6 +17,13 @@ midi::midi(PinName tx, PinName rx, uint16_t baud) : _serial(tx, rx) {
     _serial.attach(callback(this, &midi::receiveMessage), Serial::RxIrq);
 }
 
+void midi::rxIrq(bool status){
+    if(status){
+        _serial.attach(callback(this, &midi::receiveMessage), Serial::RxIrq);
+    } else {
+        _serial.attach(NULL,Serial::RxIrq);
+    }
+}
 void midi::resetStatus(void) {
     messageBuffer.clear();
     systemExclusiveBufferPosition = 0;
@@ -135,8 +142,6 @@ void midi::receiveMessage(void) {
     messageBuffer.push_back(data);
     return;
 }
-
-Serial _debug(USBTX, USBRX, 38400);
 
 void midi::decodeMessage(void) {
     switch (runningStatusMessage) {

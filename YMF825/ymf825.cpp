@@ -2,13 +2,7 @@
 #include "ymf825.h"
 
 ymf825::ymf825(PinName mosi, PinName miso, PinName sck, PinName slaveSelect, PinName reset) : _spi(mosi, miso, sck),
-                                                                                              _slaveSelect(slaveSelect),
-                                                                                              _reset(reset) {
-    for (int i = 0; i < 24; i++) {
-        for (int j = 0; j < 30; j++) {
-            originalTones[i][j] = 0x00;
-        }
-    }
+                                                                                              _slaveSelect(slaveSelect),_reset(reset){
     _spi.frequency(10000000UL);
     initialise(false);
 }
@@ -17,7 +11,7 @@ ymf825::ymf825(PinName mosi, PinName miso, PinName sck, PinName slaveSelect, Pin
 void ymf825::initialise(bool softReset = false) {
     if (softReset == false) {
         for (int i = 0l; i < 16; i++) {
-            channels[i].toneNumber = 0;
+            toneNumbers[i] = 0;
         }
     }
     for (int i = 0; i < 485; i++) {
@@ -66,60 +60,47 @@ void ymf825::initialise(bool softReset = false) {
 }
 
 void ymf825::sendToneList(uint8_t number) {
-    sendData[0] = 0x81 + number;
-    for (int j = 0; j < 30; j++) {
-        if (channels[number].toneNumber > 127) {
-            sendData[1 + number * 30 + j] = originalTones[channels[number].toneNumber - 128][j];
-        } else {
-            sendData[1 + number * 30 + j] = gmTable[channels[number].toneNumber][j];
-        }
-    }
-    sendData[30 * (number + 1) + 1] = (0x80);
-    sendData[30 * (number + 1) + 2] = (0x03);
-    sendData[30 * (number + 1) + 3] = (0x81);
-    sendData[30 * (number + 1) + 4] = (0x80);
     singleWrite(0x08, 0x16);
     wait_us(1);
     singleWrite(0x08, 0x00);
     _slaveSelect = 0;
     _spi.write(0x07);
-    for (int i = 0; i < 30 * (number + 1) + 1; i++) {
-        _spi.write(sendData[i]);
+    _spi.write(0x81 + number);
+    for(int i = 0;i <= number;i++){
+        for(int j = 0;j < 30;j++){
+            _spi.write(gmTable[toneNumbers[i]][j]);
+        }
     }
+    _spi.write(0x80);
+    _spi.write(0x03);
+    _spi.write(0x81);
+    _spi.write(0x80);
     _slaveSelect = 1;
     return;
 }
 
 void ymf825::sendAllToneList(void) {
-    sendData[0] = 0x90;
-    for (int i = 0; i < 16; i++) {
-        for (int j = 0; j < 30; j++) {
-            if (channels[i].toneNumber > 127) {
-                sendData[1 + i * 30 + j] = originalTones[channels[i].toneNumber - 128][j];
-            } else {
-                sendData[1 + i * 30 + j] = gmTable[channels[i].toneNumber][j];
-            }
-        }
-    }
-    sendData[481] = (0x80);
-    sendData[482] = (0x03);
-    sendData[483] = (0x81);
-    sendData[484] = (0x80);
-    singleWrite(0x08, 0xF6);
+    singleWrite(0x08, 0x16);
     wait_us(1);
     singleWrite(0x08, 0x00);
     _slaveSelect = 0;
     _spi.write(0x07);
-    for (int i = 0; i < 485; i++) {
-        _spi.write(sendData[i]);
+    _spi.write(0x81 + 0x0F);
+    for(int i = 0;i <= 0x0F;i++){
+        for(int j = 0;j < 30;j++){
+            _spi.write(gmTable[toneNumbers[i]][j]);
+        }
     }
-    wait_us(2);
+    _spi.write(0x80);
+    _spi.write(0x03);
+    _spi.write(0x81);
+    _spi.write(0x80);
     _slaveSelect = 1;
     return;
 }
 
 void ymf825::setToneListFromGM(uint8_t channel, uint8_t number) {
-    channels[channel].toneNumber = number;
+    toneNumbers[channel] = number;
     return;
 }
 
@@ -176,12 +157,5 @@ void ymf825::allKeyOff(void) {
 
 void ymf825::allMute(void) {
     singleWrite(0x08, 0x40);
-    return;
-}
-
-void ymf825::setOriginalTone(uint8_t number, uint8_t *data) {
-    for (int i = 0; i < 30; i++) {
-        originalTones[number][i] = data[i];
-    }
     return;
 }
