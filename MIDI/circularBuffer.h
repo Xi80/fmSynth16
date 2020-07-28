@@ -30,22 +30,16 @@ namespace lunaLib{
 		}
 
 		void push_back(const T &value){
-			if (isLocked) while (true);
-			isLocked = true;
 			buffer[m_tail] = value;
 			MovePointer(m_tail, 1);
 			if (m_size == Capacity)
 				MovePointer(m_head, 1);
 			else m_size++;
-			isLocked = false;
 		}
 		T pull(){
-			if (isLocked) while (true);
-			isLocked = true;
 			const T res = buffer[m_head];
 			MovePointer(m_head, 1);
 			m_size--;
-			isLocked = false;
 			return res;
 		}
 
@@ -54,15 +48,9 @@ namespace lunaLib{
 		}
 
 		void clear(){
-			if (isLocked) while (true)
-				;
-			isLocked = true;
-
 			m_head = 0;
 			m_tail = 0;
 			m_size = 0;
-
-			isLocked = false;
 		}
 
 		T &operator[ ](const uint16_t &n){

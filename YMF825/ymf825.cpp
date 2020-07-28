@@ -14,9 +14,7 @@ void ymf825::initialise(bool softReset = false) {
             toneNumbers[i] = 0;
         }
     }
-    for (int i = 0; i < 485; i++) {
-        sendData[i] = 0x00;
-    }
+
     _reset = 0;
     wait_us(100);
     _reset = 1;
@@ -33,7 +31,7 @@ void ymf825::initialise(bool softReset = false) {
     singleWrite(0x02, 0x04);
     wait_us(1);
     singleWrite(0x02, 0x00);
-    singleWrite(0x19, 0x33 << 1);
+    singleWrite(0x19, 0x95);
     singleWrite(0x1B, 0x3F);
     singleWrite(0x14, 0x00);
     singleWrite(0x03, 0x01);

@@ -135,11 +135,16 @@ void midi::midiParse(void) {
     }
 }
 
-
-void midi::receiveMessage(void) {
+void midi::recv(void){
     uint8_t data = _serial.getc();
-    if (messageBuffer.size() > receiveMessageBufferSize - 1)messageBuffer.clear();
     messageBuffer.push_back(data);
+    return;
+}
+
+DigitalOut LED(LED3);
+void midi::receiveMessage(void) {
+    LED = !LED;
+    recv();
     return;
 }
 
