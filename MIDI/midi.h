@@ -40,7 +40,7 @@ public:
     void rxIrq(bool);
 
 private:
-    RawSerial _serial;
+    UnbufferedSerial _serial;
     lunaLib::CircularBuffer <uint8_t, receiveMessageBufferSize> messageBuffer;
     uint8_t systemExclusiveBuffer[systemExclusiveBufferSize];
     uint8_t systemExclusiveBufferPosition = 0;

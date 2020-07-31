@@ -14,14 +14,14 @@ midi::midi(PinName tx, PinName rx, uint16_t baud) : _serial(tx, rx) {
     callbackFunctionAllNotesOff = NULL;
     callbackFunctionReset = NULL;
     resetStatus();
-    _serial.attach(callback(this, &midi::receiveMessage), Serial::RxIrq);
+    _serial.attach(callback(this, &midi::receiveMessage), SerialBase::RxIrq);
 }
 
 void midi::rxIrq(bool status){
     if(status){
-        _serial.attach(callback(this, &midi::receiveMessage), Serial::RxIrq);
+        _serial.attach(callback(this, &midi::receiveMessage), SerialBase::RxIrq);
     } else {
-        _serial.attach(NULL,Serial::RxIrq);
+        _serial.attach(NULL,SerialBase::RxIrq);
     }
 }
 void midi::resetStatus(void) {
@@ -136,7 +136,8 @@ void midi::midiParse(void) {
 }
 
 void midi::recv(void){
-    uint8_t data = _serial.getc();
+    uint8_t data;
+    _serial.read(&data,1);
     messageBuffer.push_back(data);
     return;
 }

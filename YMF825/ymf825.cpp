@@ -13,6 +13,12 @@ void ymf825::initialise(bool softReset = false) {
         for (int i = 0l; i < 16; i++) {
             toneNumbers[i] = 0;
         }
+        /*
+        toneNumbers[9] = 128;
+        toneNumbers[13] = 129;
+        toneNumbers[14] = 130;
+        toneNumbers[15] = 131;
+        */
     }
 
     _reset = 0;
