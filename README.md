@@ -83,6 +83,7 @@ https://soundcloud.com/user-273146202/ethereal-house-mix-with-ymf825-midi-synthe
 | MCU                                | STM32F303K8T6(&DIP変換基板)              | 1    |
 | ピンヘッダ(1x16)                   | 指定なし                                 | 1    |
 | スイッチ付きボリューム(10kA)       | 寸法が合うものなら指定なし               | 1    |
+| YMF825Board                        | ----                                     | 1    |
 
 
 
