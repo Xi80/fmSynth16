@@ -87,6 +87,12 @@ https://soundcloud.com/user-273146202/ethereal-house-mix-with-ymf825-midi-synthe
 
 
 
+## ハードウェア
+
+HARDWAREフォルダ以下にガーバーデータがあります、各種サービスで発注してください。
+
+組み立てに関しては各自回路図を参照してください。
+
 ## ファームウェア書き込み
 
 各自ビルドしてSWD経由で書き込んでください。
