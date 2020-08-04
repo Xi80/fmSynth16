@@ -6,19 +6,14 @@
 #include "tables.h"
 #include "structs.h"
 
-midi MIDI(PG_14,PG_9,31250);
-ymf825 YMF825(PC_12,PC_11,PC_10,PC_9,PC_8);
-BufferedSerial debugPort(USBTX,USBRX,921600);
-DigitalOut LEDs[2] = {LED1,LED2};
+midi MIDI(D1,D0,31250);
+ymf825 YMF825(D11,D12,D13,D10,D9);
+//BufferedSerial debugPort(USBTX,USBRX,921600);
+//DigitalOut LEDs[2] = {LED1,LED2};
 
 struct bridgeStatus _bridgeStatus;
 struct fmStatus _fmStatus[16];
 struct midiStatus _midiStatus[16];
-
-FileHandle *mbed::mbed_override_console(int fd)
-{
-    return &debugPort;
-}
 
 /*
 Sakura767 Status Viewer Ver1.2.3
@@ -227,7 +222,7 @@ void noteOn(uint8_t channel,uint8_t note,uint8_t velocity){
         flag[3] = false;
     }
     */
-    LEDs[0] = !LEDs[0];
+    //LEDs[0] = !LEDs[0];
 
     if(_bridgeStatus.prevOnCh > 15){
         _bridgeStatus.prevOnCh = 0;

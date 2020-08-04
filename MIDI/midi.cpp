@@ -142,7 +142,7 @@ void midi::recv(void){
     return;
 }
 
-DigitalOut LED(LED3);
+DigitalOut LED(LED1);
 void midi::receiveMessage(void) {
     LED = !LED;
     recv();
