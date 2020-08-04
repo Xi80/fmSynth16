@@ -20,13 +20,11 @@ STM32F303K8T6または同等以上の性能を持ったSTM32 Nucleoボード上�
 
 本体にリズム音源以外のGM音色を内蔵しており、PCを介さずスタンドアロンでの使用が可能です。
 
-![Board](IMGS\circuit.png)
+![Board](IMGS/circuit.png)
 
 ## サンプル(演奏風景)
 
-<iframe width="100%" height="300" scrolling="no" frameborder="no" allow="autoplay" src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/868361716&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true"></iframe><div style="font-size: 10px; color: #cccccc;line-break: anywhere;word-break: normal;overflow: hidden;white-space: nowrap;text-overflow: ellipsis; font-family: Interstate,Lucida Grande,Lucida Sans Unicode,Lucida Sans,Garuda,Verdana,Tahoma,sans-serif;font-weight: 100;"><a href="https://soundcloud.com/user-273146202" title="Ivory Aveline Haskell" target="_blank" style="color: #cccccc; text-decoration: none;">Ivory Aveline Haskell</a> · <a href="https://soundcloud.com/user-273146202/ethereal-house-mix-with-ymf825-midi-synthesiser" title="鳥の詩 -ethereal house mix- With YMF825 MIDI Synthesiser" target="_blank" style="color: #cccccc; text-decoration: none;">鳥の詩 -ethereal house mix- With YMF825 MIDI Synthesiser</a></div>
-
-
+https://soundcloud.com/user-273146202/ethereal-house-mix-with-ymf825-midi-synthesiser
 
 ## 諸元
 
@@ -54,7 +52,7 @@ STM32F303K8T6または同等以上の性能を持ったSTM32 Nucleoボード上�
 
 ## 回路図
 
-![Schematic](IMGS\hwsch.png)
+![Schematic](IMGS/hwsch.png)
 
 
 
